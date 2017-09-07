@@ -27,24 +27,22 @@ app.get('/articles', function(request, response) {
   // TODO/DONE: Write a SQL query which joins all data from articles and authors tables on the author_id
   // value of each.
   client.query(`SELECT * FROM articles INNER JOIN authors ON articles.author_id=authors.author_id;`)
-  .then(function(result) {
-    response.send(result.rows);
-  })
-  .catch(function(err) {
-    console.error(err)
-  });
+    .then(function(result) {
+      response.send(result.rows);
+    })
+    .catch(function(err) {
+      console.error(err)
+    });
 });
 
 app.post('/articles', function(request, response) {
   // TODO/DONE: Write a SQL query to insert a new author into the authors table, ON CONFLICT DO NOTHING
   // TODO/DONE: Add the author and "authorUrl" as data for the SQL query
-  console.log ('body:',request.body);
   client.query(
     `INSERT INTO authors(author, "authorUrl") VALUES($1, $2) ON CONFLICT DO NOTHING;`, 
     [request.body.author, request.body.authorUrl],
     function(err) {
       if (err) console.error(err)
-        console.log ('body author',request.body.author);
       queryTwo() // This is our second query, to be executed when this first query is complete.
     }
   )
@@ -98,29 +96,29 @@ app.put('/articles/:id', function(request, response) {
       request.params.id
     ]
   )
-  .then(function() {
+    .then(function() {
     // TODO-DONE: Write a SQL query to update an article record. Keep in mind that article records
     // now have an author_id, in addition to title, category, publishedOn, and body.
     // TODO-DONE: Add the required values from the request as data for the SQL query to interpolate
-    client.query(`UPDATE articles
+      client.query(`UPDATE articles
       SET 
       title=$1, category=$2, "publishedOn"=$3, body=$4, author_id=$5;
       `,
-      [
+        [
           request.body.title,
           request.body.category,
           request.body.publishedOn,
           request.body.body,
           request.params.id
-      ]
+        ]
       )
-  })
-  .then(function() {
-    response.send('Update complete');
-  })
-  .catch(function(err) {
-    console.error(err);
-  })
+    })
+    .then(function() {
+      response.send('Update complete');
+    })
+    .catch(function(err) {
+      console.error(err);
+    })
 });
 
 app.delete('/articles/:id', function(request, response) {
@@ -128,22 +126,22 @@ app.delete('/articles/:id', function(request, response) {
     `DELETE FROM articles WHERE article_id=$1;`,
     [request.params.id]
   )
-  .then(function() {
-    response.send('Delete complete');
-  })
-  .catch(function(err) {
-    console.error(err)
-  });
+    .then(function() {
+      response.send('Delete complete');
+    })
+    .catch(function(err) {
+      console.error(err)
+    });
 });
 
 app.delete('/articles', function(request, response) {
   client.query('DELETE FROM articles')
-  .then(function() {
-    response.send('Delete complete');
-  })
-  .catch(function(err) {
-    console.error(err)
-  });
+    .then(function() {
+      response.send('Delete complete');
+    })
+    .catch(function(err) {
+      console.error(err)
+    });
 });
 
 loadDB();
@@ -170,23 +168,23 @@ function loadAuthors() {
 // REVIEW: This helper function will load articles into the DB if the DB is empty
 function loadArticles() {
   client.query('SELECT COUNT(*) FROM articles')
-  .then(function(result) {
-    if(!parseInt(result.rows[0].count)) {
-      fs.readFile('./public/data/hackerIpsum.json', function(err, fd) {
-        JSON.parse(fd.toString()).forEach(function(ele) {
-          client.query(`
-            INSERT INTO
-            articles(author_id, title, category, "publishedOn", body)
-            SELECT author_id, $1, $2, $3, $4
-            FROM authors
-            WHERE author=$5;
-          `,
-            [ele.title, ele.category, ele.publishedOn, ele.body, ele.author]
-          )
+    .then(function(result) {
+      if(!parseInt(result.rows[0].count)) {
+        fs.readFile('./public/data/hackerIpsum.json', function(err, fd) {
+          JSON.parse(fd.toString()).forEach(function(ele) {
+            client.query(`
+              INSERT INTO
+              articles(author_id, title, category, "publishedOn", body)
+              SELECT author_id, $1, $2, $3, $4
+              FROM authors
+              WHERE author=$5;
+            `,
+              [ele.title, ele.category, ele.publishedOn, ele.body, ele.author]
+            )
+          })
         })
-      })
-    }
-  })
+      }
+    })
 }
 
 // REVIEW: Below are two queries, wrapped in the loadDB() function,
@@ -202,12 +200,12 @@ function loadDB() {
       "authorUrl" VARCHAR (255)
     );`
   )
-  .then(function(data) {
-    loadAuthors(data);
-  })
-  .catch(function(err) {
-    console.error(err)
-  });
+    .then(function(data) {
+      loadAuthors(data);
+    })
+    .catch(function(err) {
+      console.error(err)
+    });
 
   client.query(`
     CREATE TABLE IF NOT EXISTS
@@ -220,10 +218,10 @@ function loadDB() {
       body TEXT NOT NULL
     );`
   )
-  .then(function(data) {
-    loadArticles(data);
-  })
-  .catch(function(err) {
-    console.error(err)
-  });
+    .then(function(data) {
+      loadArticles(data);
+    })
+    .catch(function(err) {
+      console.error(err)
+    });
 }
