@@ -34,7 +34,7 @@ app.get('/articles', function(request, response) {
 });
 
 app.post('/articles', function(request, response) {
-  // TODO: Write a SQL query to insert a new author, ON CONFLICT DO NOTHING
+  // TODO: Write a SQL query to insert a new author into the authors table, ON CONFLICT DO NOTHING
   // TODO: Add the author and "authorUrl" as data for the SQL query
   client.query(
     '', 
