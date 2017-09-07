@@ -65,11 +65,12 @@ app.post('/articles', function(request, response) {
   }
 
   function queryThree(author_id) {
-    // TODO: Write a SQL query to insert the new article using the author_id from our previous query
-    // TODO: Add the data from our new article, including the author_id, as data for the SQL query.
+    // DONE---TODO: Write a SQL query to insert the new article using the author_id from our previous query
+    // DONE---TODO: Add the data from our new article, including the author_id, as data for the SQL query.
     client.query(
-      `INSERT INTO article (author_id) VALUES ($1)`,
-      [],
+      `INSERT INTO article (author_id, title, category, "publishedOn", body ) VALUES ($1, $2, $3, $4, $5)`,
+      [author_id, request.body.title, request.body.category, request.body.publishedOn, request.body.body],
+
       function(err) {
         if (err) console.error(err);
         response.send('insert complete');
