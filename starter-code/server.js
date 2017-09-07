@@ -6,7 +6,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const PORT = process.env.PORT || 3000;
 const app = express();
-const conString = '';// TODO: Set your conString. What port is your database server listening on?
+const conString = 'postgres://postgres:1234@localhost:5432/kilovolt';// DONE:TODO: Set your conString. What port is your database server listening on?
 
 const client = new pg.Client(conString);
 client.connect();
