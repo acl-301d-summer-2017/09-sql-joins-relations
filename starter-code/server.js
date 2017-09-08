@@ -6,7 +6,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const PORT = process.env.PORT || 3000;
 const app = express();
-const conString = '';// TODO: Set your conString. What port is your database server listening on?
+const conString = 'postgres://localhost:5432/kilovolt';// DONE TODO: Set your conString. What port is your database server listening on?
 
 const client = new pg.Client(conString);
 client.connect();
@@ -23,22 +23,31 @@ app.get('/new', function(request, response) {
 });
 
 app.get('/articles', function(request, response) {
-  // TODO: Write a SQL query which joins all data from articles and authors tables on the author_id value of each
-  client.query('')
-  .then(function(result) {
-    response.send(result.rows);
-  })
-  .catch(function(err) {
-    console.error(err)
-  });
+  // DONE TODO: Write a SQL query which joins all data from articles and authors tables on the author_id value of each
+  client.query(`
+    SELECT * 
+    FROM articles 
+    INNER JOIN authors 
+    ON articles.author_id=authors.author_id;
+  `)
+    .then(function(result) {
+      response.send(result.rows);
+    })
+    .catch(function(err) {
+      console.error(err)
+    });
 });
 
 app.post('/articles', function(request, response) {
-  // TODO: Write a SQL query to insert a new author into the authors table, ON CONFLICT DO NOTHING
-  // TODO: Add the author and "authorUrl" as data for the SQL query
+  // DONE TODO: Write a SQL query to insert a new author into the authors table, ON CONFLICT DO NOTHING
+  // DONE TODO: Add the author and "authorUrl" as data for the SQL query
+  console.log('query 1, author id,', request.body.author_id);
   client.query(
-    '', 
-    [], 
+    `INSERT INTO authors (author, "authorUrl") 
+    VALUES ($1, $2)
+    ON CONFLICT DO NOTHING;`,
+    [request.body.author, request.body.authorUrl],
+
     function(err) {
       if (err) console.error(err)
       queryTwo() // This is our second query, to be executed when this first query is complete.
@@ -46,9 +55,10 @@ app.post('/articles', function(request, response) {
   )
 
   function queryTwo() {
+    console.log('query 2, author id,', request.body);    
     client.query(
-      ``, // TODO: Write a SQL query to retrieve the author_id from the authors table for the new article
-      [], // TODO: Add the author name as data for the SQL query
+      `SELECT author_id FROM authors WHERE author=$1`, // DONE TODO: Write a SQL query to retrieve the author_id from the authors table for the new article
+      [request.body.author], // DONE TODO: Add the author name as data for the SQL query
       function(err, result) {
         if (err) console.error(err)
         queryThree(result.rows[0].author_id) // This is our third query, to be executed when the second is complete. We are also passing the author_id into our third query
@@ -57,11 +67,13 @@ app.post('/articles', function(request, response) {
   }
 
   function queryThree(author_id) {
-    // TODO: Write a SQL query to insert the new article using the author_id from our previous query
-    // TODO: Add the data from our new article, including the author_id, as data for the SQL query.
+    console.log('query 3, author id,', author_id);    
+    // DONE---TODO: Write a SQL query to insert the new article using the author_id from our previous query
+    // DONE---TODO: Add the data from our new article, including the author_id, as data for the SQL query.
     client.query(
-      ``, 
-      [], 
+      `INSERT INTO articles (author_id, title, category, "publishedOn", body ) VALUES ($1, $2, $3, $4, $5)`,
+      [author_id, request.body.title, request.body.category, request.body.publishedOn, request.body.body],
+
       function(err) {
         if (err) console.error(err);
         response.send('insert complete');
@@ -74,25 +86,37 @@ app.put('/articles/:id', function(request, response) {
   // TODO: Write a SQL query to update an author record. Remember that our articles now have
   // an author_id property, so we can reference it from the request.body.
   // TODO: Add the required values from the request as data for the SQL query to interpolate
+  console.log(request.body);
   client.query(
-    ``,
-    []
+    `UPDATE authors 
+    SET
+    author = $1, "authorUrl" = $2
+    WHERE author_id = $3`,
+    [request.body.author, request.body.authorUrl, request.params.id]
   )
-  .then(function() {
+    .then(function() {
     // TODO: Write a SQL query to update an article record. Keep in mind that article records
     // now have an author_id, in addition to title, category, publishedOn, and body.
     // TODO: Add the required values from the request as data for the SQL query to interpolate
-    client.query(
-      ``,
-      []
-    )
-  })
-  .then(function() {
-    response.send('Update complete');
-  })
-  .catch(function(err) {
-    console.error(err);
-  })
+      client.query(
+        `UPDATE articles
+        SET
+        author_id = $1,
+        title = $2,
+        category = $3,
+        publishedOn = $4,
+        body = $5
+        WHERE article_id = $6
+        `,
+        [request.body.author_id, request.body.title, request.body.category, request.body.publishedOn, request.body.body, request.params.id]
+      )
+    })
+    .then(function() {
+      response.send('Update complete');
+    })
+    .catch(function(err) {
+      console.error(err);
+    })
 });
 
 app.delete('/articles/:id', function(request, response) {
@@ -100,22 +124,22 @@ app.delete('/articles/:id', function(request, response) {
     `DELETE FROM articles WHERE article_id=$1;`,
     [request.params.id]
   )
-  .then(function() {
-    response.send('Delete complete');
-  })
-  .catch(function(err) {
-    console.error(err)
-  });
+    .then(function() {
+      response.send('Delete complete');
+    })
+    .catch(function(err) {
+      console.error(err)
+    });
 });
 
 app.delete('/articles', function(request, response) {
   client.query('DELETE FROM articles')
-  .then(function() {
-    response.send('Delete complete');
-  })
-  .catch(function(err) {
-    console.error(err)
-  });
+    .then(function() {
+      response.send('Delete complete');
+    })
+    .catch(function(err) {
+      console.error(err)
+    });
 });
 
 loadDB();
@@ -142,23 +166,23 @@ function loadAuthors() {
 // REVIEW: This helper function will load articles into the DB if the DB is empty
 function loadArticles() {
   client.query('SELECT COUNT(*) FROM articles')
-  .then(function(result) {
-    if(!parseInt(result.rows[0].count)) {
-      fs.readFile('./public/data/hackerIpsum.json', function(err, fd) {
-        JSON.parse(fd.toString()).forEach(function(ele) {
-          client.query(`
+    .then(function(result) {
+      if(!parseInt(result.rows[0].count)) {
+        fs.readFile('./public/data/hackerIpsum.json', function(err, fd) {
+          JSON.parse(fd.toString()).forEach(function(ele) {
+            client.query(`
             INSERT INTO
             articles(author_id, title, category, "publishedOn", body)
             SELECT author_id, $1, $2, $3, $4
             FROM authors
             WHERE author=$5;
           `,
-            [ele.title, ele.category, ele.publishedOn, ele.body, ele.author]
-          )
+              [ele.title, ele.category, ele.publishedOn, ele.body, ele.author]
+            )
+          })
         })
-      })
-    }
-  })
+      }
+    })
 }
 
 // REVIEW: Below are two queries, wrapped in the loadDB() function,
@@ -174,12 +198,12 @@ function loadDB() {
       "authorUrl" VARCHAR (255)
     );`
   )
-  .then(function(data) {
-    loadAuthors(data);
-  })
-  .catch(function(err) {
-    console.error(err)
-  });
+    .then(function(data) {
+      loadAuthors(data);
+    })
+    .catch(function(err) {
+      console.error(err)
+    });
 
   client.query(`
     CREATE TABLE IF NOT EXISTS
@@ -192,10 +216,10 @@ function loadDB() {
       body TEXT NOT NULL
     );`
   )
-  .then(function(data) {
-    loadArticles(data);
-  })
-  .catch(function(err) {
-    console.error(err)
-  });
+    .then(function(data) {
+      loadArticles(data);
+    })
+    .catch(function(err) {
+      console.error(err)
+    });
 }
