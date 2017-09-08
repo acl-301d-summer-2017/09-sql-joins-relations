@@ -23,7 +23,7 @@ app.get('/new', function(request, response) {
 });
 
 app.get('/articles', function(request, response) {
-  // DONE(?) TODO: Write a SQL query which joins all data from articles and authors tables on the author_id value of each
+  // DONE TODO: Write a SQL query which joins all data from articles and authors tables on the author_id value of each
   client.query(`
     SELECT * 
     FROM articles 
@@ -41,8 +41,9 @@ app.get('/articles', function(request, response) {
 app.post('/articles', function(request, response) {
   // DONE TODO: Write a SQL query to insert a new author into the authors table, ON CONFLICT DO NOTHING
   // DONE TODO: Add the author and "authorUrl" as data for the SQL query
+  console.log('query 1, author id,', request.body.author_id);
   client.query(
-    `INSERT INTO authors (author, authorUrl) 
+    `INSERT INTO authors (author, "authorUrl") 
     VALUES ($1, $2)
     ON CONFLICT DO NOTHING;`,
     [request.body.author, request.body.authorUrl],
@@ -54,8 +55,9 @@ app.post('/articles', function(request, response) {
   )
 
   function queryTwo() {
+    console.log('query 2, author id,', request.body);    
     client.query(
-      `SELECT author_id FROM authors WHERE author = $1`, // DONE TODO: Write a SQL query to retrieve the author_id from the authors table for the new article
+      `SELECT author_id FROM authors WHERE author=$1`, // DONE TODO: Write a SQL query to retrieve the author_id from the authors table for the new article
       [request.body.author], // DONE TODO: Add the author name as data for the SQL query
       function(err, result) {
         if (err) console.error(err)
@@ -65,11 +67,12 @@ app.post('/articles', function(request, response) {
   }
 
   function queryThree(author_id) {
+    console.log('query 3, author id,', author_id);    
     // DONE---TODO: Write a SQL query to insert the new article using the author_id from our previous query
     // DONE---TODO: Add the data from our new article, including the author_id, as data for the SQL query.
     client.query(
-      `INSERT INTO article (author_id, title, category, "publishedOn", body ) VALUES ($1, $2, $3, $4, $5)`,
-      [request.body.author_id, request.body.title, request.body.category, request.body.publishedOn, request.body.body],
+      `INSERT INTO articles (author_id, title, category, "publishedOn", body ) VALUES ($1, $2, $3, $4, $5)`,
+      [author_id, request.body.title, request.body.category, request.body.publishedOn, request.body.body],
 
       function(err) {
         if (err) console.error(err);
@@ -83,12 +86,13 @@ app.put('/articles/:id', function(request, response) {
   // TODO: Write a SQL query to update an author record. Remember that our articles now have
   // an author_id property, so we can reference it from the request.body.
   // TODO: Add the required values from the request as data for the SQL query to interpolate
+  console.log(request.body);
   client.query(
     `UPDATE authors 
     SET
-    author = "$1", authorUrl = "$2" 
-    WHERE author_id = request.body.article_id `,
-    [request.body.author_id, request.body.article_id]
+    author = $1, "authorUrl" = $2
+    WHERE author_id = $3`,
+    [request.body.author, request.body.authorUrl, request.params.id]
   )
     .then(function() {
     // TODO: Write a SQL query to update an article record. Keep in mind that article records
@@ -97,14 +101,14 @@ app.put('/articles/:id', function(request, response) {
       client.query(
         `UPDATE articles
         SET
-        author_id = "$1"
-        title = "$2"
-        category = "$3"
-        publishedOn = "$4"
-        body = "$5"
-        WHERE article_id = request.params.id
+        author_id = $1,
+        title = $2,
+        category = $3,
+        publishedOn = $4,
+        body = $5
+        WHERE article_id = $6
         `,
-        [request.body.author_id, request.body.title, request.body.category, request.body.publishedOn, request.body.body]
+        [request.body.author_id, request.body.title, request.body.category, request.body.publishedOn, request.body.body, request.params.id]
       )
     })
     .then(function() {
