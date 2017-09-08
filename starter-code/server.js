@@ -6,7 +6,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const PORT = process.env.PORT || 3000;
 const app = express();
-const conString = '';// TODO: Set your conString. What port is your database server listening on?
+const conString = 'postgres://localhost:5432/kilovolt';// DONE:TODO: Set your conString. What port is your database server listening on?
+// const conString = 'postgres://postgres:1234@localhost:5432/kilovolt'; -- For windows
 
 const client = new pg.Client(conString);
 client.connect();
@@ -23,8 +24,12 @@ app.get('/new', function(request, response) {
 });
 
 app.get('/articles', function(request, response) {
-  // TODO: Write a SQL query which joins all data from articles and authors tables on the author_id value of each
-  client.query('')
+  // DONE TODO: Write a SQL query which joins all data from articles and authors tables on the author_id value of each
+  client.query(`
+    SELECT * FROM articles
+    INNER JOIN authors 
+    ON articles.author_id = authors.author_id;
+  `)
   .then(function(result) {
     response.send(result.rows);
   })
@@ -34,11 +39,15 @@ app.get('/articles', function(request, response) {
 });
 
 app.post('/articles', function(request, response) {
-  // TODO: Write a SQL query to insert a new author into the authors table, ON CONFLICT DO NOTHING
-  // TODO: Add the author and "authorUrl" as data for the SQL query
+  // DONE TODO: Write a SQL query to insert a new author into the authors table, ON CONFLICT DO NOTHING
+  // DONE TODO: Add the author and "authorUrl" as data for the SQL query
   client.query(
-    '', 
-    [], 
+    `INSERT INTO
+    authors(author, "authorUrl")
+    VALUES($1,$2)
+    ON CONFLICT DO NOTHING;    
+    `, 
+    [request.body.author, request.body.authorUrl], 
     function(err) {
       if (err) console.error(err)
       queryTwo() // This is our second query, to be executed when this first query is complete.
@@ -47,8 +56,11 @@ app.post('/articles', function(request, response) {
 
   function queryTwo() {
     client.query(
-      ``, // TODO: Write a SQL query to retrieve the author_id from the authors table for the new article
-      [], // TODO: Add the author name as data for the SQL query
+      `SELECT author_id
+       FROM authors
+       WHERE author=$1;
+      `, // DONE TODO: Write a SQL query to retrieve the author_id from the authors table for the new article
+      [request.body.author], //DONE TODO: Add the author name as data for the SQL query
       function(err, result) {
         if (err) console.error(err)
         queryThree(result.rows[0].author_id) // This is our third query, to be executed when the second is complete. We are also passing the author_id into our third query
@@ -57,11 +69,13 @@ app.post('/articles', function(request, response) {
   }
 
   function queryThree(author_id) {
-    // TODO: Write a SQL query to insert the new article using the author_id from our previous query
-    // TODO: Add the data from our new article, including the author_id, as data for the SQL query.
+    // DONE TODO: Write a SQL query to insert the new article using the author_id from our previous query
+    // DONE TODO: Add the data from our new article, including the author_id, as data for the SQL query.
     client.query(
-      ``, 
-      [], 
+      `INSERT INTO 
+       articles(*)
+       VALUES ($1);` 
+      [request.body.title, request.body.category, request.body.publishOn, request.body.body], 
       function(err) {
         if (err) console.error(err);
         response.send('insert complete');
@@ -71,12 +85,17 @@ app.post('/articles', function(request, response) {
 });
 
 app.put('/articles/:id', function(request, response) {
-  // TODO: Write a SQL query to update an author record. Remember that our articles now have
+  // MAYBE DONE TODO: Write a SQL query to update an author record. Remember that our articles now have
   // an author_id property, so we can reference it from the request.body.
   // TODO: Add the required values from the request as data for the SQL query to interpolate
   client.query(
-    ``,
-    []
+    `UPDATE authors
+     SET 
+      author_id=$1
+      author=$2
+      authorUrl=$3
+     `,
+    [request.body.author_id, request.body.author, request.body.authorUrl]
   )
   .then(function() {
     // TODO: Write a SQL query to update an article record. Keep in mind that article records
@@ -89,7 +108,7 @@ app.put('/articles/:id', function(request, response) {
   })
   .then(function() {
     response.send('Update complete');
-  })
+y 
   .catch(function(err) {
     console.error(err);
   })
